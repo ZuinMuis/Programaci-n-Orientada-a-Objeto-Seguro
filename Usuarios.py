@@ -18,18 +18,24 @@ class Usuario:
         print(f"[{self._rol}] {self._correo}: Asignado al departamento.")
 
 
+class Administrador(Usuario):
+    def __init__(self, id_usuario: int, correo: str, password_plana: str):
+        super().__init__(id_usuario=id_usuario, correo=correo, password_plana=password_plana, rol="Administrador")
+
+    def gestionar(self, entidad: str):
+        print(f"El Administrador {self._correo} está gestionando: {entidad}")
+
+    def generarInforme(self) -> str:
+        informe = f"--- INFORME ---\nGenerado por Administrador: {self._correo}"
+        print(informe)
+        return informe
+
+
 class Empleado(Usuario):
     def __init__(self, id_usuario: int, correo: str, password_plana: str, 
                  id_empleado: int, nombre: str, direccion: str, telefono: str, 
                  email: str, fecha_contrato: str, salario: float):
-        
-        super().__init__(
-            id_usuario=id_usuario, 
-            correo=correo, 
-            password_plana=password_plana, 
-            rol="Empleado"
-        )
-        
+        super().__init__(id_usuario=id_usuario, correo=correo, password_plana=password_plana, rol="Empleado")
         self._id_empleado = id_empleado
         self._nombre = nombre
         self._direccion = direccion
@@ -39,33 +45,15 @@ class Empleado(Usuario):
         self._salario = salario
 
     @property
-    def id_empleado(self) -> int:
-        return self._id_empleado
-
-    @property
     def nombre(self) -> str:
         return self._nombre
-
-    @nombre.setter
-    def nombre(self, nuevo_nombre: str):
-        if nuevo_nombre.strip():
-            self._nombre = nuevo_nombre
-        else:
-            raise ValueError("El nombre no puede estar vacío.")
 
     @property
     def salario(self) -> float:
         return self._salario
 
-    @salario.setter
-    def salario(self, nuevo_salario: float):
-        if nuevo_salario >= 0:
-            self._salario = nuevo_salario
-        else:
-            raise ValueError("El salario no puede ser negativo.")
-
     def registrarHoras(self, registro_tiempo):
-        print(f"El empleado {self._nombre} ha registrado horas en el sistema de tiempo.")
+        print(f"El empleado {self._nombre} ha registrado sus horas.")
 
     def asignarDepartamento(self, departamento):
-        print(f"El empleado {self._nombre} fue asignado al departamento de {departamento.nombre}.")
+        print(f"El empleado {self._nombre} fue asignado al departamento: {departamento.nombre}")
