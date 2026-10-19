@@ -91,3 +91,5 @@ if __name__ == "__main__":
     emp.registrarHoras(None)
     
     print("\n--- PRUEBAS FINALIZADAS EXITOSAMENTE ---")       
+
+
