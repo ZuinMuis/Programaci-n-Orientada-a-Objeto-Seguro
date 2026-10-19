@@ -32,15 +32,12 @@ class Usuario:
         return self._rol
 
     def registrarHoras(self, registro_tiempo):
-        """Registra una instancia de Registro_Tiempo asociada al usuario."""
         print(f"[{self._rol}] {self._correo}: Horas registradas correctamente.")
 
     def asignarDepartamento(self, departamento):
-        """Asigna un departamento al usuario."""
         print(f"[{self._rol}] {self._correo}: Asignado al departamento '{departamento.nombre}'.")
 
     def verificar_password(self, password: str) -> bool:
-        """Valida si la contraseña ingresada coincide con el hash almacenado."""
         return self._password_hash == self._hash_password(password)
 
 
