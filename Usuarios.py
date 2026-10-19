@@ -57,3 +57,37 @@ class Empleado(Usuario):
 
     def asignarDepartamento(self, departamento):
         print(f"El empleado {self._nombre} fue asignado al departamento: {departamento.nombre}")
+
+
+
+
+# ===================#
+# BLOQUE DE PRUEBAS  #
+# ===================#
+
+if __name__ == "__main__":
+    print("--- INICIANDO PRUEBAS DEL SISTEMA ---")
+    
+    # 1. Probar la clase Administrador
+    admin = Administrador(id_usuario=1, correo="admin@empresa.com", password_plana="admin123")
+    print(f"\n[OK] Administrador creado: {admin.correo}")
+    admin.gestionar("Módulos de Empleados")
+    admin.generarInforme()
+
+    # 2. Probar la clase Empleado
+    emp = Empleado(
+        id_usuario=2, 
+        correo="juan.perez@empresa.com", 
+        password_plana="clave456",
+        id_empleado=101, 
+        nombre="Juan Pérez", 
+        direccion="Calle Falsa 123", 
+        telefono="912345678", 
+        email="juan.perez@empresa.com", 
+        fecha_contrato="2026-03-01", 
+        salario=850000
+    )
+    print(f"\n[OK] Empleado creado: {emp.nombre}")
+    emp.registrarHoras(None)
+    
+    print("\n--- PRUEBAS FINALIZADAS EXITOSAMENTE ---")       
