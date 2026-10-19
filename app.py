@@ -4,7 +4,6 @@ from Departamento import Departamento
 from Proyecto import Proyecto
 from Registro_Tiempo import Registro_Tiempo
 
-# Listas globales en memoria para almacenar los registros durante la ejecución
 lista_departamentos = []
 lista_proyectos = []
 lista_empleados = []
