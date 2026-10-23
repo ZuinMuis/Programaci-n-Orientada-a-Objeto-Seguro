@@ -1,9 +1,28 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .Usuarios import Empleado
+
+
 class Departamento:
-    """Clase Departamento según el diagrama UML."""
-    def __init__(self, id_departamento: int, nombre: str, gerente: str):
+    """Agrupa empleados y mantiene los datos propios de un departamento."""
+
+    def __init__(self, id_departamento: int, nombre: str, gerente: str) -> None:
+        if id_departamento <= 0:
+            raise ValueError("El ID del departamento debe ser positivo.")
         self._id_departamento = id_departamento
-        self._nombre = nombre
-        self._gerente = gerente
+        self._nombre = self._validar_texto(nombre, "nombre")
+        self._gerente = self._validar_texto(gerente, "gerente")
+        self._empleados: list[Empleado] = []
+
+    @staticmethod
+    def _validar_texto(valor: str, campo: str) -> str:
+        valor = valor.strip()
+        if not valor:
+            raise ValueError(f"El {campo} del departamento no puede estar vacio.")
+        return valor
 
     @property
     def id_departamento(self) -> int:
@@ -14,18 +33,24 @@ class Departamento:
         return self._nombre
 
     @nombre.setter
-    def nombre(self, nuevo_nombre: str):
-        if nuevo_nombre.strip():
-            self._nombre = nuevo_nombre
-        else:
-            raise ValueError("El nombre del departamento no puede estar vacío.")
+    def nombre(self, nuevo_nombre: str) -> None:
+        self._nombre = self._validar_texto(nuevo_nombre, "nombre")
 
     @property
     def gerente(self) -> str:
         return self._gerente
 
-    def crear(self):
-        print(f"Departamento '{self._nombre}' creado exitosamente.")
+    @property
+    def empleados(self) -> tuple[Empleado, ...]:
+        return tuple(self._empleados)
+
+    def _agregar_empleado(self, empleado: Empleado) -> None:
+        if empleado not in self._empleados:
+            self._empleados.append(empleado)
+
+    def _quitar_empleado(self, empleado: Empleado) -> None:
+        if empleado in self._empleados:
+            self._empleados.remove(empleado)
 
     def editar(self, nuevo_nombre: str, nuevo_gerente: str):
         self.nombre = nuevo_nombre

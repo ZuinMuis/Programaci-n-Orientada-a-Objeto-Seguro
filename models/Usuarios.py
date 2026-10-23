@@ -1,48 +1,123 @@
+from __future__ import annotations
+
 import hashlib
+import hmac
+import os
+from datetime import date
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .Departamento import Departamento
+    from .Registro_Tiempo import Registro_Tiempo
+
 
 class Usuario:
-    def __init__(self, id_usuario: int, correo: str, password_plana: str, rol: str):
+    """Clase base con identidad, correo y credenciales protegidas."""
+
+    _SCRYPT_N = 2**14
+    _SCRYPT_R = 8
+    _SCRYPT_P = 1
+
+    def __init__(self, id_usuario: int, correo: str, password_plana: str) -> None:
+        if id_usuario <= 0:
+            raise ValueError("El ID de usuario debe ser positivo.")
+        correo = correo.strip().lower()
+        if "@" not in correo or correo.startswith("@") or correo.endswith("@"):
+            raise ValueError("El correo no tiene un formato valido.")
+        if not password_plana:
+            raise ValueError("La contrasena no puede estar vacia.")
         self._id_usuario = id_usuario
         self._correo = correo
-        self._password_hash = hashlib.sha256(password_plana.encode('utf-8')).hexdigest()
-        self._rol = rol
+        self._password_salt = os.urandom(16)
+        self._password_hash = self._hash_password(password_plana, self._password_salt)
+
+    @classmethod
+    def _hash_password(cls, password: str, salt: bytes) -> bytes:
+        return hashlib.scrypt(
+            password.encode("utf-8"),
+            salt=salt,
+            n=cls._SCRYPT_N,
+            r=cls._SCRYPT_R,
+            p=cls._SCRYPT_P,
+        )
+
+    @property
+    def id_usuario(self) -> int:
+        return self._id_usuario
 
     @property
     def correo(self) -> str:
         return self._correo
 
-    def registrarHoras(self, registro_tiempo):
-        print(f"[{self._rol}] {self._correo}: Horas registradas correctamente.")
+    @property
+    def rol(self) -> str:
+        return self.__class__.__name__
 
-    def asignarDepartamento(self, departamento):
-        print(f"[{self._rol}] {self._correo}: Asignado al departamento.")
+    def verificar_contrasena(self, password: str) -> bool:
+        hash_ingresado = self._hash_password(password, self._password_salt)
+        return hmac.compare_digest(self._password_hash, hash_ingresado)
 
 
 class Administrador(Usuario):
-    def __init__(self, id_usuario: int, correo: str, password_plana: str):
-        super().__init__(id_usuario=id_usuario, correo=correo, password_plana=password_plana, rol="Administrador")
+    """Usuario con permisos para administrar el sistema."""
 
-    def gestionar(self, entidad: str):
-        print(f"El Administrador {self._correo} está gestionando: {entidad}")
+    def gestionar(self, entidad: str) -> str:
+        entidad = entidad.strip()
+        if not entidad:
+            raise ValueError("Debe indicar la entidad que se gestionara.")
+        return f"El administrador {self.correo} gestiona: {entidad}"
 
-    def generarInforme(self) -> str:
-        informe = f"--- INFORME ---\nGenerado por Administrador: {self._correo}"
-        print(informe)
-        return informe
+    def generar_informe(self) -> str:
+        return f"--- INFORME ---\nGenerado por administrador: {self.correo}"
 
 
 class Empleado(Usuario):
-    def __init__(self, id_usuario: int, correo: str, password_plana: str, 
-                 id_empleado: int, nombre: str, direccion: str, telefono: str, 
-                 email: str, fecha_contrato: str, salario: float):
-        super().__init__(id_usuario=id_usuario, correo=correo, password_plana=password_plana, rol="Empleado")
+    """Usuario que pertenece opcionalmente a un departamento y registra horas."""
+
+    def __init__(
+        self,
+        id_usuario: int,
+        correo: str,
+        password_plana: str,
+        id_empleado: int,
+        nombre: str,
+        direccion: str,
+        telefono: str,
+        email: str,
+        fecha_contrato: str,
+        salario: float,
+    ) -> None:
+        super().__init__(id_usuario, correo, password_plana)
+        if id_empleado <= 0:
+            raise ValueError("El ID de empleado debe ser positivo.")
+        if salario < 0:
+            raise ValueError("El salario no puede ser negativo.")
+        email = email.strip().lower()
+        if "@" not in email or email.startswith("@") or email.endswith("@"):
+            raise ValueError("El email de contacto no tiene un formato valido.")
+        try:
+            self._fecha_contrato = date.fromisoformat(fecha_contrato).isoformat()
+        except ValueError as error:
+            raise ValueError("La fecha de contrato debe tener formato YYYY-MM-DD.") from error
         self._id_empleado = id_empleado
         self._nombre = nombre
         self._direccion = direccion
         self._telefono = telefono
         self._email = email
-        self._fecha_contrato = fecha_contrato
         self._salario = salario
+        self._departamento: Departamento | None = None
+        self._registros_tiempo: list[Registro_Tiempo] = []
+
+    @staticmethod
+    def _validar_texto(valor: str, campo: str) -> str:
+        valor = valor.strip()
+        if not valor:
+            raise ValueError(f"El {campo} no puede estar vacio.")
+        return valor
+
+    @property
+    def id_empleado(self) -> int:
+        return self._id_empleado
 
     @property
     def nombre(self) -> str:
@@ -52,44 +127,27 @@ class Empleado(Usuario):
     def salario(self) -> float:
         return self._salario
 
-    def registrarHoras(self, registro_tiempo):
-        print(f"El empleado {self._nombre} ha registrado sus horas.")
+    @property
+    def departamento(self) -> Departamento | None:
+        return self._departamento
 
-    def asignarDepartamento(self, departamento):
-        print(f"El empleado {self._nombre} fue asignado al departamento: {departamento.nombre}")
+    @property
+    def registros_tiempo(self) -> tuple[Registro_Tiempo, ...]:
+        return tuple(self._registros_tiempo)
 
+    def asignar_departamento(self, departamento: Departamento | None) -> None:
+        if self._departamento is departamento:
+            return
+        if self._departamento is not None:
+            self._departamento._quitar_empleado(self)
+        self._departamento = departamento
+        if departamento is not None:
+            departamento._agregar_empleado(self)
 
-
-
-# ===================#
-# BLOQUE DE PRUEBAS  #
-# ===================#
-
-if __name__ == "__main__":
-    print("--- INICIANDO PRUEBAS DEL SISTEMA ---")
-    
-    # 1. Probar la clase Administrador
-    admin = Administrador(id_usuario=1, correo="admin@empresa.com", password_plana="admin123")
-    print(f"\n[OK] Administrador creado: {admin.correo}")
-    admin.gestionar("Módulos de Empleados")
-    admin.generarInforme()
-
-    # 2. Probar la clase Empleado
-    emp = Empleado(
-        id_usuario=2, 
-        correo="juan.perez@empresa.com", 
-        password_plana="clave456",
-        id_empleado=101, 
-        nombre="Juan Pérez", 
-        direccion="Calle Falsa 123", 
-        telefono="912345678", 
-        email="juan.perez@empresa.com", 
-        fecha_contrato="2026-03-01", 
-        salario=850000
-    )
-    print(f"\n[OK] Empleado creado: {emp.nombre}")
-    emp.registrarHoras(None)
-    
-    print("\n--- PRUEBAS FINALIZADAS EXITOSAMENTE ---")       
+    def registrar_horas(self, registro_tiempo: Registro_Tiempo) -> None:
+        if registro_tiempo.empleado is not self:
+            raise ValueError("El registro pertenece a otro empleado.")
+        if registro_tiempo not in self._registros_tiempo:
+            self._registros_tiempo.append(registro_tiempo)
 
 

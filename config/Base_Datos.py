@@ -1,4 +1,5 @@
 import sqlite3
+from pathlib import Path
 from sqlite3 import Connection, Cursor
 
 class Database:
@@ -7,7 +8,7 @@ class Database:
     el patrón Singleton para evitar múltiples instancias innecesarias.
     """
     _instance = None
-    _db_path = "sistema_gestion.db"
+    _db_path = str(Path(__file__).resolve().parent.parent / "sistema_gestion.db")
 
     def __new__(cls):
         if cls._instance is None:
@@ -20,6 +21,7 @@ class Database:
         """
         conn = sqlite3.connect(self._db_path)
         conn.row_factory = sqlite3.Row  # Permite acceder a las columnas por nombre
+        conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
     def init_db(self) -> None:
@@ -82,7 +84,7 @@ class Database:
                 CREATE TABLE IF NOT EXISTS registro_tiempo (
                     id_registro INTEGER PRIMARY KEY,
                     fecha TEXT NOT NULL,
-                    horas REAL NOT NULL,
+                    horas REAL NOT NULL CHECK (horas > 0),
                     descripcion TEXT NOT NULL,
                     id_empleado INTEGER,
                     id_proyecto INTEGER,
@@ -92,10 +94,6 @@ class Database:
             """)
             
             conn.commit()
-            print("✅ [BD] Tablas del modelo UML creadas e inicializadas exitosamente.")
-            
-        except sqlite3.Error as e:
-            print(f"❌ [Error SQL al inicializar la base de datos]: {e}")
         finally:
             conn.close()
 
